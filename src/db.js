@@ -3,7 +3,6 @@ import { Sequelize } from "sequelize"
 
 const { PG_DB, PG_USER, PG_PASSWORD, PG_HOST, PG_PORT } = process.env
 
-console.log(PG_DB, PG_USER, PG_PASSWORD, PG_HOST, PG_PORT)
 const sequelize = new Sequelize(PG_DB, PG_USER, PG_PASSWORD, {
   host: PG_HOST,
   port: PG_PORT,
@@ -14,7 +13,7 @@ export const pgConnect = async () => {
   try {
     await sequelize.authenticate()
     console.log(`Successfully connected to Postgres!`)
-    await sequelize.sync({ alter: true })
+    await sequelize.sync(/*{ alter: true }*/)
     console.log(`All models syncronized!`)
   } catch (error) {
     console.log(error)

@@ -1,13 +1,22 @@
 import express from "express"
 import createHttpError from "http-errors"
 import { Op } from "sequelize"
+import CategoriesModel from "../categories/model.js";
 import ProductsModel from "./model.js"
+import ProductsCategoriesModel from "./productsCategoriesModel.js"
 
 const productsRouter = express.Router()
 
 productsRouter.post("/", async (req, res, next) => {
   try {
     const { productId } = await ProductsModel.create(req.body)
+    if (req.body.categories) {
+      await ProductsCategoriesModel.bulkCreate(
+        req.body.categories.map(category => {
+          return { productId: productId, categoryId: category }
+        })
+      )
+    }
     res.status(201).send({ productId })
   } catch (error) {
     next(error)
@@ -16,7 +25,15 @@ productsRouter.post("/", async (req, res, next) => {
 
 productsRouter.get("/", async (req, res, next) => {
   try {
-    const query = {}
+      /* const products = await ProductsModel.findAll({
+      attributes: ["name", "description","price", "imageUrl", "productId"],
+      include: [
+        { model: CategoriesModel, attributes: ["name"], through: { attributes: [] } },
+      ],
+    })*/
+
+
+ const query = {}
     if (req.query.minPrice && req.query.maxPrice) query.price = { [Op.between]: [req.query.minPrice, req.query.maxPrice] }
     if (req.query.name) query.name = req.query.name
     if (req.query.description) query.description = req.query.description
@@ -29,6 +46,14 @@ productsRouter.get("/", async (req, res, next) => {
       order: [
         ["price", req.query.priceOrder || "ASC"],
       ],
+      /*include: [
+        {
+          model: CategoriesModel,
+          attributes: ["name"],
+          through: { attributes: [] },
+        }
+      ],*/
+     
     })
 
     res.send(products)
@@ -71,6 +96,15 @@ productsRouter.delete("/:productId", async (req, res, next) => {
     } else {
       next(createHttpError(404, `Product with id ${req.params.productId} not found!`))
     }
+  } catch (error) {
+    next(error)
+  }
+})
+
+productsRouter.post("/:productId/categories", async (req, res, next) => {
+  try {
+    const { id} = await ProductsCategoriesModel.create({ productId: req.params.productId,  categoryId: req.body.categoryId})
+    res.send({ id })
   } catch (error) {
     next(error)
   }
